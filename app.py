@@ -3,9 +3,7 @@ import requests
 
 app = Flask(__name__)
 
-inventory = [{
-  "id":4
-}]
+inventory = []
 
 @app.route("/inventory/<int:product_id>")
 def get_product(product_id):
@@ -20,18 +18,29 @@ def get_products():
     return jsonify({"error":"Products not found"}),404
   return jsonify(inventory),200
 
-@app.route("/api/<int:barcode>")
-def get_product_from_external_api(barcode):
-  headers = {
-    "User-Agent":  "InventoryManagementSystem/1.0"
-    }
-  response = requests.get(f"https://world.openfoodfacts.org/api/v3.6/product/{barcode}.json",headers=headers)
-  data =response.json()
-  product = data['product']
-  product_details = {"PRODUCT_NAME":product['product_name'],
-                     "BRANDS":product['brands'],
-                     "INGREDIENTS_TEXT":product['ingredients_text']}
-  return jsonify(product_details)
+@app.route("/api/<int:barcode>",methods=['GET','POST'])
+def get_product_details_by_barcode_from_external_api_and_add_to_inventory(barcode):
+    headers = {
+      "User-Agent":  "InventoryManagementSystem/1.0"
+      }
+    response = requests.get(f"https://world.openfoodfacts.org/api/v3.6/product/{barcode}.json",headers=headers)
+    data =response.json()
+    product = data.get('product')
+    product_details = {"BARCODE":product.get('code'),
+      "PRODUCT_NAME":product.get('product_name'),
+                      "BRANDS":product.get('brands'),
+                      "INGREDIENTS_TEXT":product.get('ingredients_text'),"QUANTITY":product.get('quantity')}
+    if request.method == 'GET':
+      return jsonify(product_details),200
+    if request.method == "POST":
+      data = request.get_json()
+      
+      product_details['STOCK'] = data.get("STOCK",0)
+      product_details['PRICE'] = data.get("PRICE",0)
+      product_details['ID'] = len(inventory) + 1
+      inventory.append(product_details)
+      return jsonify({"message":"product created successfully",
+                      "product_details":product_details}),200
 
 @app.route("/inventory/<int:product_id>",methods=['DELETE'])
 def delete_product(product_id):
