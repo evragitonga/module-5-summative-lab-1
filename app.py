@@ -3,7 +3,28 @@ import requests
 
 app = Flask(__name__)
 
-inventory = []
+inventory = [
+    {
+        "BARCODE": "0071315040159",
+        "BRANDS": "Bread",
+        "ID": 1,
+        "INGREDIENTS_TEXT": "315' 04015 Clover Valley® 100% Whole Wheat Sandwich Bread 19g OF WHOLE GRAIN PER SERVING  WHOLE GRAIN WHEAT Nutrition Facts FLOUR, WATER, YEAST, SUGAR, WHEAT GLUTEN, SOYBEAN OIL, HONEY, About 19 servings per container CULTURED WHEAT FLOUR, SALT, Serving size 1 slice (33g) MOLASSES, VINEGAR, MODIFIED WHEY, WHEAT STARCH, CITRIC ACID, SESAME",
+        "PRICE": 100,
+        "PRODUCT_NAME": "Bread",
+        "QUANTITY": None,
+        "STOCK": 20,
+    },
+    {
+        "BARCODE": "9555487800038",
+        "BRANDS": "Farm Fresh",
+        "ID": 2,
+        "INGREDIENTS_TEXT": "_milk_",
+        "PRICE": 80,
+        "PRODUCT_NAME": "12000048 Pure Fresh Milk",
+        "QUANTITY": "2000 g",
+        "STOCK": 20,
+    },
+]
 
 
 @app.route("/inventory/product/<int:product_id>")
@@ -30,7 +51,12 @@ def get_product_details_by_barcode_from_external_api_and_add_to_inventory(barcod
         f"https://world.openfoodfacts.org/api/v3.6/product/{barcode}.json",
         headers=headers,
     )
+    if not response:
+        jsonify({"error": "No response"}), 404
     data = response.json()
+    if not data:
+        jsonify({"error": "Products not found"}), 404
+
     product = data.get("product")
     product_details = {
         "BARCODE": product.get("code"),
@@ -55,7 +81,7 @@ def get_product_details_by_barcode_from_external_api_and_add_to_inventory(barcod
                     "product_details": product_details,
                 }
             ),
-            200,
+            201,
         )
 
 
