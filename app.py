@@ -5,9 +5,9 @@ app = Flask(__name__)
 
 inventory = []
 
-@app.route("/inventory/<int:product_id>")
+@app.route("/inventory/product/<int:product_id>")
 def get_product(product_id):
-  product = next((product for product in inventory if product['id'] == product_id),None)
+  product = next((product for product in inventory if product['ID'] == product_id),None)
   if not product:
     return jsonify({"error":"Products not found"}),404
   return jsonify(product),200
@@ -18,7 +18,7 @@ def get_products():
     return jsonify({"error":"Products not found"}),404
   return jsonify(inventory),200
 
-@app.route("/api/<int:barcode>",methods=['GET','POST'])
+@app.route("/inventory/<int:barcode>",methods=['GET','POST'])
 def get_product_details_by_barcode_from_external_api_and_add_to_inventory(barcode):
     headers = {
       "User-Agent":  "InventoryManagementSystem/1.0"
@@ -41,14 +41,29 @@ def get_product_details_by_barcode_from_external_api_and_add_to_inventory(barcod
       inventory.append(product_details)
       return jsonify({"message":"product created successfully",
                       "product_details":product_details}),200
-
+      
+@app.route("/inventory/<int:product_id>",methods=['PATCH'])
+def update(product_id):
+  data = request.get_json()
+  product = next((product for product in inventory if product["ID"] == product_id),None)
+  if not product:
+    return jsonify({"error":"Product not found"}),404
+  
+  if "STOCK" in data:
+    product['STOCK'] = data.get("STOCK",0)
+    return jsonify({"message":"Stock updated successfully",
+                      "stock":product['STOCK']}),200
+  if "PRICE" in data:
+    product['PRICE'] = data.get("PRICE",0)
+    return jsonify({"message":"Price updated successfully","price":product['PRICE']}),200
+  
 @app.route("/inventory/<int:product_id>",methods=['DELETE'])
 def delete_product(product_id):
   global inventory
-  product = next((product for product in inventory if product['id'] == product_id),None)
+  product = next((product for product in inventory if product['ID'] == product_id),None)
   if not product:
     return jsonify({"error":"Product to delete not found"}),404
-  inventory = [product for product in inventory if product['id']!= product_id]
+  inventory = [product for product in inventory if product['ID']!= product_id]
   return jsonify({"message":"Product deleted successfully"}),200
 
 if __name__ == "__main__":
